@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    if (pathname === '/mushy') {
+    if (pathname === '/admin/login') {
       setAuthenticated(false);
       return;
     }
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((r) => r.json())
       .then((d) => {
         if (!d.authenticated) {
-          router.push('/mushy');
+          router.push('/admin/login');
         } else {
           setAuthenticated(true);
         }
@@ -49,10 +49,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     await fetch('/api/admin/auth', { method: 'DELETE' });
-    router.push('/mushy');
+    router.push('/admin/login');
   };
 
-  if (pathname === '/mushy') {
+  if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
