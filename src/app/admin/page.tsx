@@ -10,7 +10,7 @@ export default function AdminPage() {
     fetch('/api/admin/check')
       .then(r => r.json())
       .then(d => {
-        router.push(d.authenticated ? '/admin/dashboard' : '/admin/login');
+        router.push(d.authenticated ? '/admin/dashboard' : '/mushy');
       });
   }, [router]);
 
