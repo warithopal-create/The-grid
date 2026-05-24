@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/hooks/useLanguage';
 import LanguageSelect from '@/components/survey/LanguageSelect';
 import IntroScreen from '@/components/survey/IntroScreen';
 import SurveyFlow from '@/components/survey/SurveyFlow';
 import { Language } from '@/types/survey';
+import { Lock } from 'lucide-react';
 
 type Screen = 'language' | 'intro' | 'survey';
 
@@ -47,13 +49,29 @@ export default function HomePage() {
     setScreen('survey');
   };
 
-  if (screen === 'language' || !language) {
-    return <LanguageSelect onSelect={handleLanguageSelect} />;
-  }
+  const pageContent = (() => {
+    if (screen === 'language' || !language) {
+      return <LanguageSelect onSelect={handleLanguageSelect} />;
+    }
 
-  if (screen === 'intro') {
-    return <IntroScreen onStart={handleStartSurvey} />;
-  }
+    if (screen === 'intro') {
+      return <IntroScreen onStart={handleStartSurvey} />;
+    }
 
-  return <SurveyFlow />;
+    return <SurveyFlow />;
+  })();
+
+  return (
+    <>
+      {/* Hidden Admin Login Button */}
+      <Link
+        href="/admin/login"
+        className="fixed top-4 right-4 p-2 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 text-white/20 hover:text-emerald-400 hover:bg-emerald-400/5 group z-50"
+        title="Admin"
+      >
+        <Lock className="w-4 h-4" />
+      </Link>
+      {pageContent}
+    </>
+  );
 }
