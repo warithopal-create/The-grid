@@ -1,10 +1,21 @@
 -- THE GRID EV Driver Survey — Supabase Schema
 -- Run this in your Supabase SQL Editor
 
+-- Admin Users Table
+CREATE TABLE IF NOT EXISTS admin_users (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  role TEXT DEFAULT 'admin' CHECK (role IN ('admin', 'editor')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Responses table
 CREATE TABLE IF NOT EXISTS responses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  session_token TEXT NOT NULL,
+  session_token TEXT NOT NULL UNIQUE,
   language TEXT NOT NULL CHECK (language IN ('en', 'ar')),
   answers JSONB NOT NULL DEFAULT '{}',
   completed BOOLEAN NOT NULL DEFAULT false,
@@ -44,28 +55,35 @@ CREATE INDEX IF NOT EXISTS idx_responses_session ON responses(session_token);
 CREATE INDEX IF NOT EXISTS idx_responses_language ON responses(language);
 CREATE INDEX IF NOT EXISTS idx_responses_completed ON responses(completed);
 CREATE INDEX IF NOT EXISTS idx_responses_created ON responses(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
 
 -- Enable RLS
 ALTER TABLE responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies: Allow anonymous inserts for survey responses
-CREATE POLICY "Allow anonymous inserts" ON responses
+-- RLS Policies for Responses
+-- Anonymous users can insert their own responses
+CREATE POLICY "Anonymous can insert responses" ON responses
   FOR INSERT TO anon WITH CHECK (true);
 
--- Allow read for authenticated/service role
-CREATE POLICY "Allow service role read" ON responses
+-- Authenticated users (admin) can read all responses
+CREATE POLICY "Admin can read all responses" ON responses
   FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Allow anon read own" ON responses
-  FOR SELECT TO anon USING (true);
+-- RLS Policies for Settings
+-- Everyone can read settings
+CREATE POLICY "Public can read settings" ON settings
+  FOR SELECT USING (true);
 
--- Settings readable by everyone
-CREATE POLICY "Allow public read settings" ON settings
-  FOR SELECT TO anon USING (true);
+-- Authenticated users (admin) can update settings
+CREATE POLICY "Admin can update settings" ON settings
+  FOR UPDATE TO authenticated USING (true);
 
-CREATE POLICY "Allow service update settings" ON settings
-  FOR ALL TO authenticated USING (true);
+-- RLS Policies for Admin Users
+-- Only service role can manage admin users (for security)
+CREATE POLICY "Service role manages admin users" ON admin_users
+  FOR ALL USING (true);
 
 -- Updated at trigger
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -82,4 +100,8 @@ CREATE TRIGGER responses_updated_at
 
 CREATE TRIGGER settings_updated_at
   BEFORE UPDATE ON settings
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER admin_users_updated_at
+  BEFORE UPDATE ON admin_users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
